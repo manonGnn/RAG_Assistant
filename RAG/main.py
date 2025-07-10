@@ -1,47 +1,25 @@
 from Retriever.Naive_Retriever import get_Naive_Retriever
-from utils import llm
-from langchain.prompts import PromptTemplate
 
-def main(query):
+import json
+
+def Retrieve_documents(query,top_k):
     """
-    Main function to run the RAG system.
+    Retrieve relevant documents based on the user's query using a naive retriever.
     """
     # 1. Retrieve relevant documents using the naive retriever
-    retriever = get_Naive_Retriever()
+    retriever = get_Naive_Retriever(top_k)
 
     retrieved_docs = retriever.invoke(query)
+    # Enregistrer les documents dans un fichier JSON
+    docs_to_save = [
+        {"page_content": doc.page_content, **getattr(doc, "__dict__", {})}
+        for doc in retrieved_docs
+    ]
+    with open("retrieved_docs.json", "w", encoding="utf-8") as f:
+        json.dump(docs_to_save, f, ensure_ascii=False, indent=2)
 
-    # 2. Generate a response using the LLM and the retrieved documents
-
-    prompt_template = """Vous êtes un assistant juridique expert dans le Code civil français.
-
-                Utilisez uniquement les informations ci-dessous pour répondre à la question posée.
-
-                Documents :
-                {documents}
-
-                Question :
-                {question}
-
-                Répondez de manière claire et concise, en citant les articles pertinents si possible.
-                """
-    
-
-    prompt_template_final = PromptTemplate(
-    input_variables=["documents", "question"],
-    template=prompt_template)
-
-    prompt = prompt_template.format(
-    documents="\n\n".join([doc.page_content for doc in retrieved_docs]),
-    question=query
-)
-
-
-    response = llm.invoke(prompt)
-
-    # 3. Print the response
-    print("Response from LLM:", response)
+    return retrieved_docs
 
 if __name__ == "__main__":
     query = "What is the main topic of the document?"
-    main(query)
+    Retrieve_documents(query)
